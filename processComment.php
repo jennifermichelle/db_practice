@@ -1,18 +1,6 @@
 <?php
-// Expose single db connection as object
-function dbconnect() {
-  // This creates a new object based on the mysqli class
-  // Creating the object is analogous to initializing the connection
-  $dbconnection = new mysqli("127.0.0.1", "jennifermichelle", "Wns56?0j06igKq&1", "JM_kutdb");
 
-  // Check if there was an error initializing the connection
-  if ( $dbconnection->connect_error ) {
-    die("Connection failed: " . $dbconnection->connect_error);
-  }
-
-// Return the connection object
-return $dbconnection;
-}
+include 'functions.php';
 
 // Test if request method is GET
 if ($_SERVER['REQUEST_METHOD'] == "GET") {
@@ -69,22 +57,36 @@ if ($_SERVER['REQUEST_METHOD'] == "GET") {
                   http_response_code(400);
                   echo "You did not enter a value. Please enter a comment by typing: comment=thisismycomment <br />";
                   break;
-              // If "comment" var is not empty
+              // If "id" key exists
+              case array_key_exists("id", $_POST):
+              // Send http 400 response if required "password" key doesn't or values are empty
+                  if ( empty($_POST["id"]) ) {
+                    http_response_code(400);
+                    echo "You did not enter a value. Please enter a valid ID <br />";
+                  } elseif ( !array_key_exists("password", $_POST) ) {
+                    http_response_code(400);
+                    echo "Passsword is required to change comment. <br />";
+                  } elseif ( empty($_POST["password"]) ) {
+                    http_response_code(400);
+                    echo "You did not enter a value. Please enter password <br />";
+                  } else { // If required key exists and values are not empty
+                    // Validates pwd and changes comment in case pwd is valid
+                    validate_password();
+                  }
+                  break;
+              // If "password" key exists
+              case array_key_exists("password", $_POST):
+                  // If var "password" is empty send http 400 response
+                  if ( empty($_POST["password"]) ) {
+                    http_response_code(400);
+                    echo "You did not enter a value. Please enter password <br />";
+                  } else { // If var "password" is not empty
+                    dbupdate(); // Save new record AND save password
+                  }
+                  break;
               default:
-              $conn = dbconnect();
-              $ip = $_SERVER['REMOTE_ADDR'];
-              $comment = $_POST['comment'];
-              $insert = "INSERT INTO Gegevens (IP, DATE, COMMENT) VALUES ('$ip', NOW(), '$comment') ";
-              $comment = mysqli_real_escape_string($conn, $comment);
-
-              // Try to INSERT record, or show error
-              if ( $conn->query($insert) === TRUE ) {
-                echo "New record created successfully <br />";
-                $conn->close();
-              } else {
-                echo "Error: " . $insert . "<br />" . $conn->error;
-              }
-              break;
+                  dbupdate(); // Save new record
+                  break;
           }
 } else { // If request method is neither GET nor POST
   http_response_code(400);
